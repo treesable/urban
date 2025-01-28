@@ -1,29 +1,17 @@
 import { z } from 'zod'
 
 export const waitlistSchema = z.object({
-  name: z.string()
-    .min(2, 'Name must be at least 2 characters')
-    .max(100, 'Name is too long')
-    .regex(/^[a-zA-Z\s]*$/, 'Name can only contain letters and spaces'),
-  email: z.string()
-    .email('Please enter a valid email')
-    .refine(
-      (email) => {
-        const blockedDomains = ['.xyz', 'temporary.', 'temp.', 'disposable.']
-        return !blockedDomains.some(domain => email.toLowerCase().includes(domain))
-      }, 
-      'Please use a business email'
-    ),
-  organization: z.string()
-    .min(2, 'Organization name is too short')
-    .max(100, 'Organization name is too long')
-    .optional(),
-  primaryGoal: z.string().optional(),
-  source: z.string().optional(),
-  urgencyLevel: z.number().optional(),
-  budget: z.string().optional(),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Please enter a valid email'),
+  organization: z.string().optional(),
+  // Questionnaire fields - match exactly with the form options
+  primaryGoal: z.enum(['starting', 'challenges', 'enhance', 'exploring']).optional(),
+  source: z.enum(['social', 'referral', 'search', 'other']).optional(),
+  urgencyLevel: z.number().min(1).max(10).optional(),
+  budget: z.enum(['price1', 'price2', 'price3', 'nobudget']).optional(),
   interestedInvestor: z.boolean().optional(),
-  additionalInfo: z.string().optional()
+  additionalInfo: z.string().optional(),
+  isInitialSubmission: z.boolean()
 })
 
 export type WaitlistInput = z.infer<typeof waitlistSchema> 

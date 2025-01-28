@@ -1,193 +1,191 @@
 'use client'
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { waitlistSchema, type WaitlistInput } from '@/utils/validation'
-import MultiStepQuestionnaire from './MultiStepQuestionnaire'
-import { z } from 'zod'
-
-interface QuestionnaireData {
-  primaryGoal?: string
-  source?: string
-  urgencyLevel?: number
-  budget?: string
-  interestedInvestor?: boolean
-  additionalInfo?: string
-}
+import { type WaitlistInput } from '@/utils/validation'
+import MultiStepQuestionnaire, { type FormData } from './MultiStepQuestionnaire'
 
 const WaitlistForm = () => {
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [organization, setOrganization] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showQuestionnaire, setShowQuestionnaire] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [questionnaireData, setQuestionnaireData] = useState<QuestionnaireData>({})
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    
+    setIsSubmitting(true)
+
     try {
-      const input: WaitlistInput = {
-        name,
-        email,
-        organization: organization || undefined,
-        ...questionnaireData
-      }
-      
-      waitlistSchema.parse(input)
-      
-      setIsSubmitting(true)
-      
       const response = await fetch('/api/waitlist', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify({
+          name,
+          email,
+          organization,
+          isInitialSubmission: true
+        }),
       })
-      
+
+      const data = await response.json()
+
       if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.message || 'Submission failed')
+        throw new Error(data.error || 'Something went wrong')
       }
-      
-      setIsSubmitting(false)
+
       setShowQuestionnaire(true)
-    } catch (err) {
       setIsSubmitting(false)
-      if (err instanceof z.ZodError) {
-        setError(err.errors[0].message)
-      } else {
-        setError('Something went wrong')
-      }
+
+    } catch (err) {
+      console.error('Submission error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to submit')
+      setIsSubmitting(false)
     }
   }
 
-  const handleQuestionnaireComplete = (data: QuestionnaireData) => {
-    setQuestionnaireData(data)
-    // Send updated data to API
-    fetch('/api/waitlist', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name,
-        email,
-        organization,
-        ...data
-      }),
-    })
+  const handleQuestionnaireComplete = async (questionnaireData: FormData) => {
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          organization,
+          primaryGoal: questionnaireData.primaryGoal,
+          source: questionnaireData.source,
+          urgencyLevel: questionnaireData.urgencyLevel,
+          budget: questionnaireData.budget,
+          interestedInvestor: questionnaireData.interestedInvestor,
+          additionalInfo: questionnaireData.additionalInfo,
+          isInitialSubmission: false
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Something went wrong')
+      }
+
+      setIsSubmitting(false)
+
+    } catch (err) {
+      console.error('Questionnaire submission error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to submit questionnaire')
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSuccessClose = () => {
+    setIsSuccess(true)
+    setShowQuestionnaire(false)
+  }
+
+  if (isSuccess) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-[#90EE90] rounded-2xl p-6 shadow-lg"
+      >
+        <h3 className="text-2xl font-bold text-[#2D5A27] mb-2">Thank you for joining!</h3>
+        <p className="text-[#234620]">We'll be in touch soon with more information.</p>
+      </motion.div>
+    )
+  }
+
+  if (showQuestionnaire) {
+    return (
+      <MultiStepQuestionnaire 
+        initialData={{ name, email, organization }}
+        onComplete={handleQuestionnaireComplete}
+        onClose={handleSuccessClose}
+        isSubmitting={isSubmitting}
+        error={error}
+      />
+    )
   }
 
   return (
-    <>
-      <div id="waitlist-form" className="bg-[#90EE90] rounded-2xl p-6 shadow-lg">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label htmlFor="name" className="block text-lg mb-2 font-semibold text-[#234620]">
-              Name
-            </label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className={`w-full px-5 py-3 bg-white rounded-lg focus:outline-none focus:ring-2 transition-all placeholder-gray-400 text-lg ${
-                error?.includes('Name') 
-                  ? 'ring-2 ring-red-300 focus:ring-red-500' 
-                  : 'focus:ring-[#234620]'
-              }`}
-              placeholder="Enter your name"
-            />
-            {error?.includes('Name') && (
-              <motion.p
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-2 text-sm text-[#234620]"
-              >
-                {error}
-              </motion.p>
-            )}
-          </div>
+    <div id="waitlist-form" className="bg-[#90EE90] rounded-2xl p-6 shadow-lg">
+      <h2 className="text-2xl font-bold text-[#2D5A27] mb-6">
+        Join the Waitlist
+      </h2>
 
-          <div>
-            <label htmlFor="email" className="block text-lg mb-2 font-semibold text-[#234620]">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className={`w-full px-5 py-3 bg-white rounded-lg focus:outline-none focus:ring-2 transition-all placeholder-gray-400 text-lg ${
-                error?.includes('email') 
-                  ? 'ring-2 ring-red-300 focus:ring-red-500' 
-                  : 'focus:ring-[#234620]'
-              }`}
-              placeholder="Enter your email"
-            />
-            {error?.includes('email') && (
-              <motion.p
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-2 text-sm text-[#234620]"
-              >
-                {error}
-              </motion.p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="organization" className="block text-lg mb-2 font-semibold text-[#234620]">
-              Organization
-            </label>
-            <input
-              type="text"
-              id="organization"
-              value={organization}
-              onChange={(e) => setOrganization(e.target.value)}
-              className={`w-full px-5 py-3 bg-white rounded-lg focus:outline-none focus:ring-2 transition-all placeholder-gray-400 text-lg ${
-                error?.includes('Organization') 
-                  ? 'ring-2 ring-red-300 focus:ring-red-500' 
-                  : 'focus:ring-[#234620]'
-              }`}
-              placeholder="Enter your organization"
-            />
-            {error?.includes('Organization') && (
-              <motion.p
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-2 text-sm text-[#234620]"
-              >
-                {error}
-              </motion.p>
-            )}
-          </div>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            type="submit"
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label htmlFor="name" className="block text-lg mb-2 font-semibold text-[#234620]">
+            Name
+          </label>
+          <input
+            type="text"
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className="w-full px-5 py-3 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#234620] transition-all"
+            placeholder="Enter your name"
             disabled={isSubmitting}
-            className="w-full bg-[#234620] text-white font-semibold py-4 px-8 rounded-lg text-lg shadow-lg hover:bg-[#1a351a] transition-all disabled:opacity-50"
-          >
-            {isSubmitting ? 'Joining...' : 'Start Now'}
-          </motion.button>
-        </form>
-      </div>
+          />
+        </div>
 
-      {showQuestionnaire && (
-        <MultiStepQuestionnaire
-          initialData={{ name, email, organization }}
-          onClose={() => setShowQuestionnaire(false)}
-          onComplete={handleQuestionnaireComplete}
-        />
-      )}
-    </>
+        <div>
+          <label htmlFor="email" className="block text-lg mb-2 font-semibold text-[#234620]">
+            Email
+          </label>
+          <input
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full px-5 py-3 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#234620] transition-all"
+            placeholder="Enter your email"
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="organization" className="block text-lg mb-2 font-semibold text-[#234620]">
+            Organization
+          </label>
+          <input
+            type="text"
+            id="organization"
+            value={organization}
+            onChange={(e) => setOrganization(e.target.value)}
+            className="w-full px-5 py-3 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#234620] transition-all"
+            placeholder="Enter your organization (optional)"
+            disabled={isSubmitting}
+          />
+        </div>
+
+        {error && (
+          <div className="text-red-600 bg-red-50 p-3 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full bg-[#234620] text-white font-semibold py-4 px-8 rounded-lg text-lg shadow-lg hover:bg-[#1a351a] transition-all disabled:opacity-50"
+        >
+          {isSubmitting ? 'Submitting...' : 'Join Now'}
+        </button>
+      </form>
+    </div>
   )
 }
 

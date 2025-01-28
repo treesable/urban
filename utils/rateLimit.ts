@@ -8,7 +8,7 @@ const redis = new Redis({
 export async function checkRateLimit(ip: string): Promise<boolean> {
   const key = `ratelimit:${ip}`
   const limit = 5 // attempts
-  const window = 15 * 60 // 15 minutes in seconds
+  const window = 15 * 60 // 15 minutes
 
   const current = await redis.incr(key)
   if (current === 1) {

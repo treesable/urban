@@ -3,55 +3,117 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReactConfetti from 'react-confetti'
 
-interface QuestionnaireProps {
+type StepProps = {
+  formData: FormData
+  setFormData: (data: FormData) => void
+  handleNext: () => void
+}
+
+export type Goal = 'starting' | 'challenges' | 'enhance' | 'exploring'
+export type Source = 'social' | 'referral' | 'search' | 'other'
+export type Budget = 'price1' | 'price2' | 'price3' | 'nobudget'
+
+export interface FormData {
+  primaryGoal: Goal | null
+  source: Source | null
+  urgencyLevel: number
+  budget: Budget | null
+  interestedInvestor: boolean | null
+  additionalInfo: string
+}
+
+export interface QuestionnaireProps {
   initialData: {
     name: string
     email: string
     organization: string
   }
   onClose: () => void
-  onComplete: (data: {
-    primaryGoal?: string
-    source?: string
-    urgencyLevel?: number
-    budget?: string
-    interestedInvestor?: boolean
-    additionalInfo?: string
-  }) => void
+  onComplete: (data: FormData) => void
+  isSubmitting?: boolean
+  error?: string | null
 }
 
-type Goal = 'starting' | 'challenges' | 'enhance' | 'exploring'
-type Source = 'social' | 'referral' | 'search' | 'other'
-
-interface FormData {
-  primaryGoal: Goal | null
-  source: Source | null
-  urgencyLevel: number
-  budget: 'price1' | 'price2' | 'price3' | 'nobudget' | null
-  interestedInvestor: boolean | null
-  additionalInfo: string
+const Step1 = ({ formData, setFormData, handleNext }: StepProps) => {
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-[#2D5A27]">
+        What is your primary goal in managing urban forests and green infrastructure?
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {[
+          { id: 'starting', label: 'Starting a new project or initiative' },
+          { id: 'challenges', label: 'Overcoming current challenges' },
+          { id: 'enhance', label: 'Enhancing existing practices' },
+          { id: 'exploring', label: 'Exploring new possibilities' }
+        ].map((goal) => (
+          <button
+            key={goal.id}
+            onClick={() => {
+              setFormData({ ...formData, primaryGoal: goal.id as Goal })
+              handleNext()
+            }}
+            className={`p-4 rounded-xl text-left transition-all ${
+              formData.primaryGoal === goal.id
+                ? 'bg-[#90EE90] text-[#234620]'
+                : 'bg-gray-50 hover:bg-[#90EE90]/10'
+            }`}
+          >
+            {goal.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
 }
 
-const MultiStepQuestionnaire = ({ initialData, onClose, onComplete }: QuestionnaireProps) => {
+const Step2 = ({ formData, setFormData, handleNext }: StepProps) => {
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-[#2D5A27]">
+        How did you hear about us?
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {[
+          { id: 'social', label: 'Social Media' },
+          { id: 'referral', label: 'Referral from a friend or colleague' },
+          { id: 'search', label: 'Search engine' },
+          { id: 'other', label: 'Other' }
+        ].map((source) => (
+          <button
+            key={source.id}
+            onClick={() => {
+              setFormData({ ...formData, source: source.id as Source })
+              handleNext()
+            }}
+            className={`p-4 rounded-xl text-left transition-all ${
+              formData.source === source.id
+                ? 'bg-[#90EE90] text-[#234620]'
+                : 'bg-gray-50 hover:bg-[#90EE90]/10'
+            }`}
+          >
+            {source.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const MultiStepQuestionnaire: React.FC<QuestionnaireProps> = ({ 
+  initialData, 
+  onClose, 
+  onComplete, 
+  isSubmitting = false,
+  error = null 
+}) => {
   const [step, setStep] = useState(1)
   const [showSuccess, setShowSuccess] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [windowSize, setWindowSize] = useState({
-    width: typeof window !== 'undefined' ? window.innerWidth : 0,
-    height: typeof window !== 'undefined' ? window.innerHeight : 0,
+    width: 0,
+    height: 0,
   })
-
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      })
-    }
-
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
 
   const [formData, setFormData] = useState<FormData>({
     primaryGoal: null,
@@ -62,6 +124,25 @@ const MultiStepQuestionnaire = ({ initialData, onClose, onComplete }: Questionna
     additionalInfo: ''
   })
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      })
+
+      const handleResize = () => {
+        setWindowSize({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        })
+      }
+
+      window.addEventListener('resize', handleResize)
+      return () => window.removeEventListener('resize', handleResize)
+    }
+  }, [])
+
   const totalSteps = 6
   const progress = (step / totalSteps) * 100
 
@@ -69,12 +150,17 @@ const MultiStepQuestionnaire = ({ initialData, onClose, onComplete }: Questionna
     if (step < totalSteps) {
       setStep(step + 1)
     } else {
-      // Send data back to parent
-      onComplete(formData)
-      // Show success page and trigger confetti
+      handleSubmitComplete(formData)
+    }
+  }
+
+  const handleSubmitComplete = async (finalData: FormData) => {
+    try {
+      await onComplete(finalData)
       setShowSuccess(true)
       setShowConfetti(true)
-      setTimeout(() => setShowConfetti(false), 5000)
+    } catch (error) {
+      console.error('Failed to submit:', error)
     }
   }
 
@@ -82,6 +168,73 @@ const MultiStepQuestionnaire = ({ initialData, onClose, onComplete }: Questionna
     if (step > 1) {
       setStep(step - 1)
     }
+  }
+
+  const handleGotIt = () => {
+    setShowConfetti(false)
+    onClose()
+  }
+
+  if (showSuccess) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      >
+        {showConfetti && (
+          <ReactConfetti
+            width={windowSize.width}
+            height={windowSize.height}
+            recycle={false}
+            numberOfPieces={500}
+            onConfettiComplete={() => setShowConfetti(false)}
+          />
+        )}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center py-8 bg-white rounded-2xl p-8 max-w-md mx-auto relative z-50"
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring" }}
+            className="w-24 h-24 bg-[#90EE90] rounded-full mx-auto mb-8 flex items-center justify-center"
+          >
+            <svg 
+              className="w-12 h-12 text-[#2D5A27]" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M5 13l4 4L19 7" 
+              />
+            </svg>
+          </motion.div>
+
+          <h2 className="text-3xl font-bold text-[#2D5A27] mb-4">
+            Congratulations, {initialData.name}!
+          </h2>
+
+          <p className="text-gray-600 mb-8">
+            You've successfully joined our waitlist! We'll be in touch soon with more information.
+          </p>
+
+          <button
+            onClick={handleGotIt}
+            className="bg-[#2D5A27] text-white px-8 py-3 rounded-lg hover:bg-[#234620] transition-all"
+          >
+            Got it!
+          </button>
+        </motion.div>
+      </motion.div>
+    )
   }
 
   return (
@@ -95,8 +248,8 @@ const MultiStepQuestionnaire = ({ initialData, onClose, onComplete }: Questionna
         <ReactConfetti
           width={windowSize.width}
           height={windowSize.height}
-          colors={['#2D5A27', '#90EE90', '#234620', '#ffffff']}
-          recycle={false}
+          recycle={true}
+          numberOfPieces={200}
         />
       )}
 
@@ -130,68 +283,8 @@ const MultiStepQuestionnaire = ({ initialData, onClose, onComplete }: Questionna
                   exit={{ x: -20, opacity: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  {step === 1 && (
-                    <div className="space-y-6">
-                      <h2 className="text-2xl font-bold text-[#2D5A27]">
-                      What is your primary goal in managing urban forests and green infrastructure?
-                      </h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {[
-                          { id: 'starting', label: 'Starting a new project or initiative' },
-                          { id: 'challenges', label: 'Overcoming current challenges' },
-                          { id: 'enhance', label: 'Enhancing existing practices' },
-                          { id: 'exploring', label: 'Exploring new possibilities' }
-                        ].map((goal) => (
-                          <button
-                            key={goal.id}
-                            onClick={() => {
-                              setFormData({ ...formData, primaryGoal: goal.id as Goal })
-                              handleNext()
-                            }}
-                            className={`p-4 rounded-xl text-left transition-all ${
-                              formData.primaryGoal === goal.id
-                                ? 'bg-[#90EE90] text-[#234620]'
-                                : 'bg-gray-50 hover:bg-[#90EE90]/10'
-                            }`}
-                          >
-                            {goal.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Step 2: How did you hear about us? */}
-                  {step === 2 && (
-                    <div className="space-y-6">
-                      <h2 className="text-2xl font-bold text-[#2D5A27]">
-                        How did you hear about us?
-                      </h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {[
-                          { id: 'social', label: 'Social Media' },
-                          { id: 'referral', label: 'Referral from a friend or colleague' },
-                          { id: 'search', label: 'Search engine' },
-                          { id: 'other', label: 'Other' }
-                        ].map((source) => (
-                          <button
-                            key={source.id}
-                            onClick={() => {
-                              setFormData({ ...formData, source: source.id as Source })
-                              handleNext()
-                            }}
-                            className={`p-4 rounded-xl text-left transition-all ${
-                              formData.source === source.id
-                                ? 'bg-[#90EE90] text-[#234620]'
-                                : 'bg-gray-50 hover:bg-[#90EE90]/10'
-                            }`}
-                          >
-                            {source.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  {step === 1 && <Step1 formData={formData} setFormData={setFormData} handleNext={handleNext} />}
+                  {step === 2 && <Step2 formData={formData} setFormData={setFormData} handleNext={handleNext} />}
 
                   {/* Step 3: Urgency Level */}
                   {step === 3 && (
@@ -333,14 +426,19 @@ const MultiStepQuestionnaire = ({ initialData, onClose, onComplete }: Questionna
                 {step === totalSteps ? 'Complete' : 'Next'}
               </button>
             </div>
+
+            {error && (
+              <div className="text-red-600 bg-red-50 p-3 rounded-lg mb-4">
+                {error}
+              </div>
+            )}
           </>
         ) : (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center py-8"
+            className="text-center py-8 bg-white rounded-2xl p-8 max-w-md mx-auto relative z-50"
           >
-            {/* Success Content */}
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -362,48 +460,20 @@ const MultiStepQuestionnaire = ({ initialData, onClose, onComplete }: Questionna
               </svg>
             </motion.div>
 
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-3xl font-bold text-[#2D5A27] mb-4"
-            >
+            <h2 className="text-3xl font-bold text-[#2D5A27] mb-4">
               Congratulations, {initialData.name}!
-            </motion.h2>
+            </h2>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="text-gray-600 mb-8 max-w-md mx-auto"
-            >
-              You've successfully joined the waitlist! Over the coming weeks, we'll be rolling out more information 
-              and updates about our urban forest management platform. You'll be among the first to know.
-            </motion.p>
+            <p className="text-gray-600 mb-8">
+              You've successfully joined our waitlist! We'll be in touch soon with more information.
+            </p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="space-y-4"
-            >
-              <h3 className="font-semibold text-[#2D5A27]">What's Next?</h3>
-              <ul className="text-gray-600 space-y-2">
-                <li>✓ Check your email for a welcome message</li>
-                <li>✓ Access your exclusive resources</li>
-                <li>✓ Stay tuned for important updates</li>
-              </ul>
-            </motion.div>
-
-            <motion.button
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              onClick={onClose}
-              className="mt-8 bg-[#2D5A27] text-white px-8 py-3 rounded-lg hover:bg-[#234620] transition-all"
+            <button
+              onClick={handleGotIt}
+              className="bg-[#2D5A27] text-white px-8 py-3 rounded-lg hover:bg-[#234620] transition-all"
             >
               Got it!
-            </motion.button>
+            </button>
           </motion.div>
         )}
       </motion.div>

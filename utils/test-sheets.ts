@@ -1,5 +1,6 @@
 import './test-env'
 import { addSubmissionToSheet } from './googleSheets'
+import type { WaitlistInput } from './validation'
 
 async function testConnection() {
   try {
@@ -8,17 +9,20 @@ async function testConnection() {
       throw new Error('Missing required environment variables')
     }
 
-    const success = await addSubmissionToSheet({
+    const testData: WaitlistInput = {
       name: 'Test User',
       email: 'test@example.com',
       organization: 'Test Org',
-      primaryGoal: 'Testing',
-      source: 'Direct',
+      primaryGoal: 'starting',
+      source: 'social',
       urgencyLevel: 1,
-      budget: 'Test',
+      budget: 'price1',
       interestedInvestor: false,
-      additionalInfo: 'Test submission'
-    })
+      additionalInfo: 'Test submission',
+      isInitialSubmission: true
+    }
+
+    const success = await addSubmissionToSheet(testData)
 
     if (success) {
       console.log('Test row added successfully!')
