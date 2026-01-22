@@ -25,7 +25,7 @@ const ValueProposition = () => {
           <div className="text-center mb-16">
             <div className="inline-block">
               <h2 className="text-4xl md:text-5xl font-bold text-[#2D5A27] relative">
-                In the coming months, we're launching a
+                We're launching a
                 <span className="block">more efficient way to manage urban forests.</span>
                 <motion.div 
                   className="absolute -bottom-3 left-0 w-full h-1 bg-[#90EE90]"
