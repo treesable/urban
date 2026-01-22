@@ -16,4 +16,10 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+  
+  /* Ensure backdrop blur works across browsers */
+  .backdrop-blur-\[10px\] {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
 } 
