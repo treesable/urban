@@ -15,10 +15,10 @@ export const metadata: Metadata = {
     siteName: 'Tree Impact',
     images: [
       {
-        url: '/og-image.jpg',
+        url: 'https://treeimpact.treesable.com/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'Tree Impact',
+        alt: 'Tree Impact - Transform how you track, measure, and communicate trees impact',
       },
     ],
     locale: 'en_US',
@@ -27,8 +27,8 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Tree Impact',
-    description: 'Transform how you track, measure, and communicate trees impact.',
-    images: ['/og-image.jpg'],
+    description: 'Transform how you track, measure, and communicate trees impact. Stay tuned for our full web platform.',
+    images: ['https://treeimpact.treesable.com/og-image.jpg'],
   },
 }
 
