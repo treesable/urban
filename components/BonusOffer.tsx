@@ -4,16 +4,13 @@ import { motion } from 'framer-motion'
 import WaitlistForm from './WaitlistForm'
 
 const features = [
+  
   {
-    title: "2024 Urban Forestry Technology Guide",
-    description: "Get early access to our comprehensive guide"
-  },
-  {
-    title: "Case studies from successful cities",
+    title: "Future Case studies from successful cities",
     description: "Learn from real-world implementations"
   },
   {
-    title: "Early access to beta features",
+    title: "Early access to new features",
     description: "Be the first to try new capabilities"
   }
 ]
@@ -54,16 +51,6 @@ const BonusOffer = () => {
             >
               Join the waitlist and get access to exclusive resources
             </motion.h2>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-xl mb-6"
-            >
-              Recently we recorded a 30-minute masterclass on "AI-Powered Urban Forest Management" 
-              - it's yours when you register for the waiting list.
-            </motion.p>
 
             <div className="space-y-4">
               {features.map((feature, index) => (
