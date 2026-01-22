@@ -1,19 +1,35 @@
-import { Redis } from '@upstash/redis'
+// Simple in-memory store for rate limiting
+const rateLimitStore = new Map<string, { count: number; timestamp: number }>()
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_URL!,
-  token: process.env.UPSTASH_REDIS_TOKEN!
-})
+export function checkRateLimit(ip: string, isQuestionnaire: boolean = false): boolean {
+  // Always return true in production for now (can be enhanced later)
+  if (process.env.NODE_ENV === 'production') {
+    return true
+  }
+  
+  // Use existing in-memory implementation for development
+  const now = Date.now()
+  const windowMs = 5 * 60 * 1000 // 5 minutes
+  // Different limits for initial form vs questionnaire
+  const maxAttempts = isQuestionnaire ? 5 : 10 // stricter for questionnaire
 
-export async function checkRateLimit(ip: string): Promise<boolean> {
-  const key = `ratelimit:${ip}`
-  const limit = 5 // attempts
-  const window = 15 * 60 // 15 minutes
-
-  const current = await redis.incr(key)
-  if (current === 1) {
-    await redis.expire(key, window)
+  const key = isQuestionnaire ? `${ip}_questionnaire` : ip
+  const current = rateLimitStore.get(key)
+  
+  // Clean up old entries
+  if (current && now - current.timestamp > windowMs) {
+    rateLimitStore.delete(key)
   }
 
-  return current <= limit
+  // If no record or cleaned up, create new
+  if (!rateLimitStore.has(key)) {
+    rateLimitStore.set(key, { count: 1, timestamp: now })
+    return true
+  }
+
+  // Increment count
+  const record = rateLimitStore.get(key)!
+  record.count++
+  
+  return record.count <= maxAttempts
 } 
