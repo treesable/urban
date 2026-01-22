@@ -6,10 +6,10 @@ import ClientLayout from './components/ClientLayout'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Tree Impact - Coming Soon',
+  title: 'Tree Impact',
   description: 'Transform how you track, measure, and communicate trees impact. Stay tuned for our full web platform.',
   openGraph: {
-    title: 'Tree Impact - Coming Soon',
+    title: 'Tree Impact',
     description: 'Transform how you track, measure, and communicate trees impact. Stay tuned for our full web platform.',
     url: 'https://treeimpact.treesable.com',
     siteName: 'Tree Impact',
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
         url: '/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'Tree Impact - Coming Soon',
+        alt: 'Tree Impact',
       },
     ],
     locale: 'en_US',
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Tree Impact - Coming Soon',
+    title: 'Tree Impact',
     description: 'Transform how you track, measure, and communicate trees impact.',
     images: ['/og-image.jpg'],
   },
