@@ -1,11 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 // Mark this route as dynamic since it uses request URL
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
-export async function GET(req: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url)
+    const { searchParams } = request.nextUrl
     const token = searchParams.get('token')
 
     if (!token) {
